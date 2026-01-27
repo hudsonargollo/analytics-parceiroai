@@ -1,22 +1,25 @@
-name = "subscription-recovery-analytics"
+name = "painel-parceiroai"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 # Development environment (default)
 [env.development]
-name = "subscription-recovery-analytics-dev"
+name = "painel-parceiroai-dev"
 vars = { ENVIRONMENT = "development" }
 
 # Staging environment
 [env.staging]
-name = "subscription-recovery-analytics-staging"
+name = "painel-parceiroai-staging"
 vars = { ENVIRONMENT = "staging" }
 
 # Production environment
 [env.production]
-name = "subscription-recovery-analytics-prod"
+name = "painel-parceiroai-prod"
 vars = { ENVIRONMENT = "production" }
+routes = [
+  { pattern = "api.painel.clubemkt.digital", custom_domain = true }
+]
 
 # D1 Database binding
 # Note: You'll need to create the D1 database and update the database_id

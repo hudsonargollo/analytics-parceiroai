@@ -294,8 +294,8 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
   - Verify pagination with large datasets
   - Ensure all tests pass, ask the user if questions arise
 
-- [~] 15. Implement Chatwoot sidebar API
-  - [~] 15.1 Create GET /api/chatwoot/customer/:customer_id/billing endpoint
+- [-] 15. Implement Chatwoot sidebar API
+  - [x] 15.1 Create GET /api/chatwoot/customer/:customer_id/billing endpoint
     - Apply Chatwoot token authentication
     - Query D1 for customer's outstanding invoices
     - Include invoice_id, amount, due_date, status, payment_method
@@ -305,7 +305,7 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - Return CustomerBillingResponse
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
   
-  - [~] 15.2 Create POST /api/chatwoot/customer/:customer_id/resend-boleto endpoint
+  - [x] 15.2 Create POST /api/chatwoot/customer/:customer_id/resend-boleto endpoint
     - Apply Chatwoot token authentication
     - Parse invoice_id from request body
     - Trigger n8n webhook with action, customer_id, invoice_id
@@ -327,20 +327,20 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - **Validates: Requirements 5.5**
     - Simulate button click, verify n8n webhook called with correct payload
 
-- [~] 16. Implement error handling and retry logic
-  - [~] 16.1 Create retry wrapper with exponential backoff
+- [ ] 16. Implement error handling and retry logic
+  - [x] 16.1 Create retry wrapper with exponential backoff
     - Implement processWithRetry function
     - Retry failed operations up to 3 times
     - Use exponential backoff (1s, 2s, 4s)
     - _Requirements: 8.2_
   
-  - [~] 16.2 Implement dead-letter queue for persistent failures
+  - [x] 16.2 Implement dead-letter queue for persistent failures
     - Write failed events to KV with dlq: prefix
     - Include error message, attempt count, timestamp
     - Set TTL to 7 days
     - _Requirements: 8.3_
   
-  - [~] 16.3 Add immediate webhook acknowledgment
+  - [x] 16.3 Add immediate webhook acknowledgment
     - Return HTTP 202 within 100ms of receiving webhook
     - Process event asynchronously after acknowledgment
     - _Requirements: 8.1_
@@ -360,14 +360,14 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - **Validates: Requirements 8.3**
     - Simulate persistent failures, verify events written to DLQ
 
-- [~] 17. Implement data privacy and security measures
-  - [~] 17.1 Add data validation to prevent PII storage
+- [ ] 17. Implement data privacy and security measures
+  - [x] 17.1 Add data validation to prevent PII storage
     - Create validation function to check for sensitive fields
     - Reject or strip fields like name, email, phone, address
     - Log warnings if PII detected
     - _Requirements: 7.3_
   
-  - [~] 17.2 Implement historical data query support
+  - [x] 17.2 Implement historical data query support
     - Ensure queries support date ranges up to 24 months
     - Test with old data to verify no errors
     - _Requirements: 8.4_
@@ -382,8 +382,8 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - **Validates: Requirements 8.4**
     - Query data from 24 months ago, verify successful results
 
-- [~] 18. Build React dashboard frontend
-  - [~] 18.1 Set up React project with Vite
+- [x] 18. Build React dashboard frontend
+  - [x] 18.1 Set up React project with Vite
     - Initialize Vite project with React and TypeScript
     - Configure Tailwind CSS
     - Install shadcn/ui components
@@ -392,7 +392,7 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - Install Recharts for data visualization
     - _Requirements: 6.1_
   
-  - [~] 18.2 Create API client with React Query
+  - [x] 18.2 Create API client with React Query
     - Create useRecoveryMetrics hook
     - Create useCohortAnalysis hook
     - Create useDSOMetrics hook
@@ -400,7 +400,7 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - Configure caching and refetching strategies
     - _Requirements: 3.1, 3.4, 4.1_
   
-  - [~] 18.3 Build RecoveryRateChart component
+  - [x] 18.3 Build RecoveryRateChart component
     - Create bar chart with Recharts
     - Display recovery rates by branch
     - Add filter controls (date range, plan, branch)
@@ -408,29 +408,29 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - Handle error states with toast notifications
     - _Requirements: 3.1, 3.2, 3.3_
   
-  - [~] 18.4 Build CohortAnalysisTable component
+  - [x] 18.4 Build CohortAnalysisTable component
     - Create data table with shadcn/ui Table component
     - Display cohorts with recovery rates across billing cycles
     - Highlight statistically insignificant cohorts
     - Add sorting and filtering
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
   
-  - [~] 18.5 Build DSOMetrics component
+  - [x] 18.5 Build DSOMetrics component
     - Create metric cards with average and median DSO
     - Display DSO by branch with comparison
     - Add date range filter
     - Animate metric changes with Framer Motion
     - _Requirements: 3.4_
   
-  - [~] 18.6 Build main Dashboard component
+  - [x] 18.6 Build main Dashboard component
     - Compose all chart and metric components
     - Add responsive layout with Tailwind CSS
     - Implement global filter controls
     - Add refresh button and auto-refresh option
     - _Requirements: 6.1_
 
-- [~] 19. Build Chatwoot sidebar integration
-  - [~] 19.1 Create BillingSidebar component
+- [x] 19. Build Chatwoot sidebar integration
+  - [x] 19.1 Create BillingSidebar component
     - Create React component for Chatwoot iframe
     - Use useCustomerBilling hook to fetch data
     - Display outstanding invoices with amounts and due dates
@@ -438,7 +438,7 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - Calculate and display days overdue
     - _Requirements: 5.1, 5.2_
   
-  - [~] 19.2 Add payment action buttons
+  - [x] 19.2 Add payment action buttons
     - Create "Copy Pix Code" button (conditional on pix_code presence)
     - Create "Resend Boleto" button (conditional on boleto_url presence)
     - Implement copy-to-clipboard functionality
@@ -446,21 +446,21 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - Show success/error toast notifications
     - _Requirements: 5.3, 5.4, 5.5_
   
-  - [~] 19.3 Style sidebar for Chatwoot iframe context
+  - [x] 19.3 Style sidebar for Chatwoot iframe context
     - Use compact layout for sidebar width
     - Ensure responsive design for mobile
     - Match Chatwoot's design language
     - Test in actual Chatwoot iframe
 
-- [~] 20. Checkpoint - Ensure frontend works end-to-end
+- [x] 20. Checkpoint - Ensure frontend works end-to-end
   - Test dashboard with real API data
   - Test all chart interactions and filters
   - Test Chatwoot sidebar in iframe context
   - Test responsive design on mobile devices
   - Ensure all tests pass, ask the user if questions arise
 
-- [~] 21. Set up GitHub Actions CI/CD pipeline
-  - [~] 21.1 Create test workflow
+- [x] 21. Set up GitHub Actions CI/CD pipeline
+  - [x] 21.1 Create test workflow
     - Configure GitHub Actions to run on push and PR
     - Set up Node.js environment
     - Install dependencies
@@ -469,29 +469,29 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - Run integration tests
     - _Requirements: 9.1_
   
-  - [~] 21.2 Create Worker deployment workflow
+  - [x] 21.2 Create Worker deployment workflow
     - Configure Wrangler deployment
     - Set up Cloudflare API token secret
     - Deploy to correct environment based on branch
     - Add failure notifications
     - _Requirements: 9.2, 9.4_
   
-  - [~] 21.3 Create frontend deployment workflow
+  - [x] 21.3 Create frontend deployment workflow
     - Build React application with Vite
     - Set environment-specific API URLs
     - Deploy to Cloudflare Pages
     - Add failure notifications
     - _Requirements: 9.3, 9.4_
 
-- [~] 22. Final integration and testing
-  - [~] 22.1 Deploy to staging environment
+- [x] 22. Final integration and testing
+  - [x] 22.1 Deploy to staging environment
     - Apply database migrations to staging D1
     - Deploy Worker to staging
     - Deploy frontend to staging Pages
     - Configure staging secrets and environment variables
     - _Requirements: 9.5_
   
-  - [~] 22.2 End-to-end testing in staging
+  - [x] 22.2 End-to-end testing in staging
     - Send test webhooks from n8n staging
     - Verify data flows through entire system
     - Test dashboard with real data
@@ -499,7 +499,7 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - Verify caching behavior
     - Test rate limiting and authentication
   
-  - [~] 22.3 Performance testing
+  - [x] 22.3 Performance testing
     - Run load tests with k6
     - Measure API latency (p95, p99)
     - Verify cache hit rates

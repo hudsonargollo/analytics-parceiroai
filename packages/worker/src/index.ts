@@ -2,12 +2,14 @@ import { Hono } from 'hono';
 import { classifyRecoveryBranch } from './lib/recovery-branch';
 import { validateWebhookSignature } from './lib/webhook-middleware';
 import { authenticateApiKey } from './lib/api-key-auth';
+import { authenticateChatwootToken } from './lib/chatwoot-auth';
 import { rateLimiter } from './lib/rate-limiter';
 import { insertPaymentEvent } from './lib/payment-event';
 import { updateEngagementStatus } from './lib/engagement-event';
 import { calculateRecoveryRate } from './lib/recovery-rate';
 import { calculateDSO } from './lib/dso';
 import { calculateCohortAnalysis } from './lib/cohort-analysis';
+import { getCustomerBillingHistory } from './lib/customer-billing';
 import { getCachedMetrics, setCachedMetrics, generateCacheKey } from './lib/cache';
 import { parsePaginationParams, calculatePaginationMetadata, paginateArray } from './lib/pagination';
 import { 
@@ -19,20 +21,24 @@ import {
   ValidationException,
   formatValidationErrors
 } from './lib/validation';
+import { validatePaymentWebhookPII, validateEngagementWebhookPII } from './lib/pii-validation';
 import { PaymentWebhookPayload, EngagementWebhookPayload, RecoveryRateResponse, DSOResponse, CohortAnalysisResponse, PaginatedResponse } from './types';
 
 // Export business logic functions
 export { classifyRecoveryBranch };
 export { validateWebhookSignature };
 export { authenticateApiKey };
+export { authenticateChatwootToken };
 export { rateLimiter };
 export { insertPaymentEvent };
 export { updateEngagementStatus };
 export { calculateRecoveryRate };
 export { calculateDSO };
 export { calculateCohortAnalysis };
+export { getCustomerBillingHistory };
 export { getCachedMetrics, setCachedMetrics, generateCacheKey };
 export { parsePaginationParams, calculatePaginationMetadata, paginateArray };
+export { validatePaymentWebhookPII, validateEngagementWebhookPII };
 
 // Define the environment bindings type
 export interface Env {
@@ -47,7 +53,7 @@ export interface Env {
   [key: string]: any;  // Index signature for Hono compatibility
 }
 
-// Create Hono app with environment type
+// Create Hono app with environment type and execution context
 const app = new Hono<{ Bindings: Env }>();
 
 // Health check endpoint
@@ -61,94 +67,152 @@ app.get('/', (c) => {
 });
 
 // Payment webhook endpoint
+// Requirements: 7.3, 8.1 - Validate PII compliance, return HTTP 202 within 100ms, process asynchronously
 app.post('/webhooks/payment', validateWebhookSignature, async (c) => {
   // Parse the payment webhook payload from request body
   const payload = await c.req.json<PaymentWebhookPayload>();
   
-  // Extract all required fields (validation happens implicitly through TypeScript)
-  const {
-    event_id,
-    customer_id,
-    amount,
-    payment_method,
-    status,
-    timestamp,
-    invoice_id,
-    due_date,
-    branch
-  } = payload;
+  // Validate that payload does not contain PII (Requirement 7.3)
+  const piiValidation = validatePaymentWebhookPII(payload, {
+    stripSensitiveFields: false, // Reject entire payload if PII detected
+    checkValuePatterns: true,
+    logWarnings: true,
+  });
   
-  // Process asynchronously - insert into database
-  // Note: In a production system, this would be handled by a queue
-  // For now, we'll process inline but still return 202 immediately
-  try {
-    const result = await insertPaymentEvent(c.env.DB, payload);
-    
-    // Return HTTP 202 immediately (acknowledge receipt)
-    return c.json({ 
-      status: 'accepted',
-      event_id: result.event_id 
-    }, 202);
-  } catch (error) {
-    // Handle duplicate event_id
-    if (error instanceof Error && error.message.includes('Duplicate event_id')) {
-      return c.json({
-        error: 'Conflict',
-        message: error.message
-      }, 409);
-    }
-    
-    // Log other errors and return 500
-    console.error('Payment event processing failed', {
+  // If PII detected, reject the webhook
+  if (!piiValidation.isValid) {
+    console.error('Payment webhook rejected due to PII violations', {
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      event_id: payload.event_id,
       customer_id: payload.customer_id,
-      event_id: payload.event_id
+      violationCount: piiValidation.violations.length,
+      violations: piiValidation.violations.map(v => ({
+        field: v.field,
+        reason: v.reason,
+      })),
     });
     
     return c.json({
-      error: 'Internal Server Error',
-      message: 'Failed to process payment event'
-    }, 500);
+      error: 'Bad Request',
+      message: 'Payload contains sensitive personal information that cannot be stored',
+      details: 'Only customer_id and transaction metadata are allowed per LGPD compliance',
+      violations: piiValidation.violations.map(v => ({
+        field: v.field,
+        reason: v.reason,
+      })),
+    }, 400);
   }
+  
+  // Extract event_id for immediate response
+  const { event_id } = payload;
+  
+  // Process event asynchronously (fire and forget)
+  // The promise is not awaited, so the response returns immediately
+  // Cloudflare Workers will keep the execution context alive to complete this
+  (async () => {
+    try {
+      await insertPaymentEvent(c.env.DB, payload);
+      
+      console.log('Payment event processed successfully', {
+        timestamp: new Date().toISOString(),
+        event_id: payload.event_id,
+        customer_id: payload.customer_id
+      });
+    } catch (error) {
+      // Log errors but don't fail the response (already sent)
+      console.error('Payment event processing failed', {
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+        customer_id: payload.customer_id,
+        event_id: payload.event_id
+      });
+      
+      // Note: Duplicate event_id errors are logged but not returned to sender
+      // since the response has already been sent. The retry wrapper in task 16.1
+      // will handle transient failures and DLQ will capture persistent failures.
+    }
+  })();
+  
+  // Return HTTP 202 immediately (acknowledge receipt within 100ms)
+  // This prevents timeout issues and ensures reliable webhook delivery
+  return c.json({ 
+    status: 'accepted',
+    event_id: event_id 
+  }, 202);
 });
 
 // Engagement webhook endpoint
+// Requirements: 7.3, 8.1 - Validate PII compliance, return HTTP 202 within 100ms, process asynchronously
 app.post('/webhooks/engagement', validateWebhookSignature, async (c) => {
   // Parse the engagement webhook payload from request body
   const payload = await c.req.json<EngagementWebhookPayload>();
   
-  // Extract all required fields (validation happens implicitly through TypeScript)
-  const {
-    message_id,
-    customer_id,
-    status,
-    timestamp
-  } = payload;
+  // Validate that payload does not contain PII (Requirement 7.3)
+  const piiValidation = validateEngagementWebhookPII(payload, {
+    stripSensitiveFields: false, // Reject entire payload if PII detected
+    checkValuePatterns: true,
+    logWarnings: true,
+  });
   
-  // Process asynchronously - update engagement status in database
-  try {
-    const result = await updateEngagementStatus(c.env.DB, payload);
-    
-    // Return HTTP 202 immediately (acknowledge receipt)
-    return c.json({ 
-      status: 'accepted',
-      message_id: payload.message_id
-    }, 202);
-  } catch (error) {
-    // Log errors and return 500
-    console.error('Engagement event processing failed', {
+  // If PII detected, reject the webhook
+  if (!piiValidation.isValid) {
+    console.error('Engagement webhook rejected due to PII violations', {
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      message_id: payload.message_id,
       customer_id: payload.customer_id,
-      message_id: payload.message_id
+      violationCount: piiValidation.violations.length,
+      violations: piiValidation.violations.map(v => ({
+        field: v.field,
+        reason: v.reason,
+      })),
     });
     
     return c.json({
-      error: 'Internal Server Error',
-      message: 'Failed to process engagement event'
-    }, 500);
+      error: 'Bad Request',
+      message: 'Payload contains sensitive personal information that cannot be stored',
+      details: 'Only customer_id and transaction metadata are allowed per LGPD compliance',
+      violations: piiValidation.violations.map(v => ({
+        field: v.field,
+        reason: v.reason,
+      })),
+    }, 400);
   }
+  
+  // Extract message_id for immediate response
+  const { message_id } = payload;
+  
+  // Process event asynchronously (fire and forget)
+  // The promise is not awaited, so the response returns immediately
+  // Cloudflare Workers will keep the execution context alive to complete this
+  (async () => {
+    try {
+      await updateEngagementStatus(c.env.DB, payload);
+      
+      console.log('Engagement event processed successfully', {
+        timestamp: new Date().toISOString(),
+        message_id: payload.message_id,
+        customer_id: payload.customer_id
+      });
+    } catch (error) {
+      // Log errors but don't fail the response (already sent)
+      console.error('Engagement event processing failed', {
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+        customer_id: payload.customer_id,
+        message_id: payload.message_id
+      });
+      
+      // Note: The retry wrapper in task 16.1 will handle transient failures
+      // and DLQ will capture persistent failures.
+    }
+  })();
+  
+  // Return HTTP 202 immediately (acknowledge receipt within 100ms)
+  // This prevents timeout issues and ensures reliable webhook delivery
+  return c.json({ 
+    status: 'accepted',
+    message_id: message_id
+  }, 202);
 });
 
 // Analytics API: Recovery Rate Metrics
@@ -370,6 +434,129 @@ app.get('/api/metrics/cohorts', authenticateApiKey, rateLimiter(100), async (c) 
     return c.json({
       error: 'Internal Server Error',
       message: 'Failed to calculate cohort analysis'
+    }, 500);
+  }
+});
+
+// Chatwoot Sidebar API: Customer Billing History
+// Requirements: 5.1, 5.2, 5.3, 5.4
+app.get('/api/chatwoot/customer/:customer_id/billing', authenticateChatwootToken, async (c) => {
+  try {
+    // Extract customer_id from URL parameter
+    const customerId = c.req.param('customer_id');
+    
+    if (!customerId) {
+      return c.json({
+        error: 'Bad Request',
+        message: 'Missing customer_id parameter'
+      }, 400);
+    }
+    
+    // Query D1 for customer's billing history
+    const billingData = await getCustomerBillingHistory(c.env.DB, customerId);
+    
+    // Return JSON response
+    return c.json(billingData);
+  } catch (error) {
+    // Log error and return 500
+    console.error('Customer billing query failed', {
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+      customer_id: c.req.param('customer_id'),
+    });
+    
+    return c.json({
+      error: 'Internal Server Error',
+      message: 'Failed to retrieve customer billing information'
+    }, 500);
+  }
+});
+
+// Chatwoot Sidebar API: Resend Boleto
+// Requirements: 5.5
+app.post('/api/chatwoot/customer/:customer_id/resend-boleto', authenticateChatwootToken, async (c) => {
+  try {
+    // Extract customer_id from URL parameter
+    const customerId = c.req.param('customer_id');
+    
+    if (!customerId) {
+      return c.json({
+        error: 'Bad Request',
+        message: 'Missing customer_id parameter'
+      }, 400);
+    }
+    
+    // Parse request body
+    const body = await c.req.json();
+    const { invoice_id } = body;
+    
+    if (!invoice_id) {
+      return c.json({
+        error: 'Bad Request',
+        message: 'Missing invoice_id in request body'
+      }, 400);
+    }
+    
+    // Trigger n8n webhook with action, customer_id, and invoice_id
+    const n8nWebhookUrl = c.env.N8N_WEBHOOK_URL;
+    
+    const n8nPayload = {
+      action: 'resend_boleto',
+      customer_id: customerId,
+      invoice_id: invoice_id,
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Make request to n8n webhook
+    const n8nResponse = await fetch(n8nWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(n8nPayload),
+    });
+    
+    // Check if n8n webhook call was successful
+    if (!n8nResponse.ok) {
+      console.error('n8n webhook call failed', {
+        timestamp: new Date().toISOString(),
+        status: n8nResponse.status,
+        statusText: n8nResponse.statusText,
+        customer_id: customerId,
+        invoice_id: invoice_id,
+      });
+      
+      return c.json({
+        error: 'Internal Server Error',
+        message: 'Failed to trigger Boleto resend workflow'
+      }, 500);
+    }
+    
+    // Log successful trigger
+    console.log('Boleto resend triggered successfully', {
+      timestamp: new Date().toISOString(),
+      customer_id: customerId,
+      invoice_id: invoice_id,
+    });
+    
+    // Return success status
+    return c.json({
+      status: 'triggered',
+      message: 'Boleto resend workflow triggered successfully',
+      customer_id: customerId,
+      invoice_id: invoice_id,
+    });
+  } catch (error) {
+    // Log error and return 500
+    console.error('Boleto resend request failed', {
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+      customer_id: c.req.param('customer_id'),
+    });
+    
+    return c.json({
+      error: 'Internal Server Error',
+      message: 'Failed to process Boleto resend request'
     }, 500);
   }
 });

@@ -8,8 +8,8 @@ describe('App', () => {
     expect(screen.getByText('Subscription Recovery Analytics')).toBeInTheDocument();
   });
 
-  it('should render the coming soon message', () => {
+  it('should render the dashboard components', () => {
     render(<App />);
-    expect(screen.getByText('Dashboard coming soon...')).toBeInTheDocument();
+    expect(screen.getByText('Days Sales Outstanding (DSO)')).toBeInTheDocument();
   });
 });
