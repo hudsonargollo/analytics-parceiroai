@@ -1,0 +1,36 @@
+{
+  "name": "@subscription-recovery/worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for subscription recovery analytics",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "tsc",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:unit": "vitest run --grep -Property",
+    "test:property": "vitest run --grep Property",
+    "test:integration": "vitest run tests/integration",
+    "test:watch": "vitest",
+    "cf-typegen": "wrangler types"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "analytics"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "hono": "^3.12.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.1.0",
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "@types/node": "^20.10.0",
+    "fast-check": "^3.15.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "wrangler": "^3.22.0"
+  }
+}

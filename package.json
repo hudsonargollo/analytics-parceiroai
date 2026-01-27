@@ -1,0 +1,35 @@
+{
+  "name": "subscription-recovery-analytics",
+  "version": "1.0.0",
+  "description": "Real-time analytics layer for subscription recovery tracking",
+  "private": true,
+  "workspaces": [
+    "packages/worker",
+    "packages/frontend"
+  ],
+  "scripts": {
+    "dev:worker": "npm run dev --workspace=packages/worker",
+    "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "build:worker": "npm run build --workspace=packages/worker",
+    "build:frontend": "npm run build --workspace=packages/frontend",
+    "test": "npm run test --workspaces",
+    "test:unit": "npm run test:unit --workspaces",
+    "test:property": "npm run test:property --workspaces",
+    "test:integration": "npm run test:integration --workspaces",
+    "deploy:worker": "npm run deploy --workspace=packages/worker",
+    "deploy:frontend": "npm run deploy --workspace=packages/frontend"
+  },
+  "keywords": [
+    "analytics",
+    "subscription",
+    "recovery",
+    "cloudflare",
+    "workers"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}

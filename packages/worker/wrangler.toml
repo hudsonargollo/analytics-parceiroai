@@ -1,0 +1,44 @@
+name = "subscription-recovery-analytics"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Development environment (default)
+[env.development]
+name = "subscription-recovery-analytics-dev"
+vars = { ENVIRONMENT = "development" }
+
+# Staging environment
+[env.staging]
+name = "subscription-recovery-analytics-staging"
+vars = { ENVIRONMENT = "staging" }
+
+# Production environment
+[env.production]
+name = "subscription-recovery-analytics-prod"
+vars = { ENVIRONMENT = "production" }
+
+# D1 Database binding
+# Note: You'll need to create the D1 database and update the database_id
+# Run: wrangler d1 create recovery_analytics
+[[d1_databases]]
+binding = "DB"
+database_name = "recovery_analytics"
+database_id = "placeholder-database-id"
+
+# KV Namespace binding
+# Note: You'll need to create the KV namespace and update the id
+# Run: wrangler kv:namespace create "CACHE"
+[[kv_namespaces]]
+binding = "KV"
+id = "placeholder-kv-id"
+
+# Environment variables (non-sensitive)
+[vars]
+N8N_WEBHOOK_URL = "https://your-n8n-instance.com/webhook/boleto-resend"
+
+# Secrets (set via: wrangler secret put SECRET_NAME)
+# - WEBHOOK_SECRET: HMAC secret for n8n webhook validation
+# - ZUCKZAPGO_SECRET: HMAC secret for ZuckZapGo webhook validation
+# - VALID_API_KEYS: Comma-separated list of valid API keys
+# - CHATWOOT_TOKEN: Authentication token for Chatwoot integration
