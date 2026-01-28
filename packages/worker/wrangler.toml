@@ -6,35 +6,58 @@ compatibility_flags = ["nodejs_compat"]
 # Development environment (default)
 [env.development]
 name = "painel-parceiroai-dev"
-vars = { ENVIRONMENT = "development" }
+vars = { ENVIRONMENT = "development", N8N_WEBHOOK_URL = "https://your-n8n-instance.com/webhook/boleto-resend" }
+
+[[env.development.d1_databases]]
+binding = "DB"
+database_name = "painel-parceiroai-db"
+database_id = "bc869016-65e8-4181-931d-b45f6e4840c9"
+
+[[env.development.kv_namespaces]]
+binding = "KV"
+id = "ad78f34ba1804a2e9dae1ed916112016"
 
 # Staging environment
 [env.staging]
 name = "painel-parceiroai-staging"
-vars = { ENVIRONMENT = "staging" }
+vars = { ENVIRONMENT = "staging", N8N_WEBHOOK_URL = "https://your-n8n-instance.com/webhook/boleto-resend" }
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "painel-parceiroai-db"
+database_id = "bc869016-65e8-4181-931d-b45f6e4840c9"
+
+[[env.staging.kv_namespaces]]
+binding = "KV"
+id = "ad78f34ba1804a2e9dae1ed916112016"
 
 # Production environment
 [env.production]
 name = "painel-parceiroai-prod"
-vars = { ENVIRONMENT = "production" }
+vars = { ENVIRONMENT = "production", N8N_WEBHOOK_URL = "https://your-n8n-instance.com/webhook/boleto-resend" }
 routes = [
   { pattern = "api.painel.clubemkt.digital", custom_domain = true }
 ]
 
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "painel-parceiroai-db"
+database_id = "bc869016-65e8-4181-931d-b45f6e4840c9"
+
+[[env.production.kv_namespaces]]
+binding = "KV"
+id = "ad78f34ba1804a2e9dae1ed916112016"
+
 # D1 Database binding
-# Note: You'll need to create the D1 database and update the database_id
-# Run: wrangler d1 create recovery_analytics
 [[d1_databases]]
 binding = "DB"
-database_name = "recovery_analytics"
-database_id = "placeholder-database-id"
+database_name = "painel-parceiroai-db"
+database_id = "bc869016-65e8-4181-931d-b45f6e4840c9"
 
 # KV Namespace binding
-# Note: You'll need to create the KV namespace and update the id
-# Run: wrangler kv:namespace create "CACHE"
 [[kv_namespaces]]
 binding = "KV"
-id = "placeholder-kv-id"
+id = "ad78f34ba1804a2e9dae1ed916112016"
 
 # Environment variables (non-sensitive)
 [vars]

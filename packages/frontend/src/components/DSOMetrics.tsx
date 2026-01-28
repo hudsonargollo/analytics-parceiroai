@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useDSOMetrics } from '@/hooks/useDSOMetrics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,18 +78,19 @@ export function DSOMetrics({
 
   // Fetch data with current filters
   const { data, isLoading, error, isError } = useDSOMetrics(
-    { date_range: dateRange },
-    {
-      // Show error toast when query fails
-      onError: (err) => {
-        toast({
-          variant: 'destructive',
-          title: 'Failed to load DSO data',
-          description: err.message || 'An error occurred while fetching DSO metrics.',
-        });
-      },
-    }
+    { date_range: dateRange }
   );
+
+  // Show error toast when query fails
+  useEffect(() => {
+    if (isError && error) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to load DSO data',
+        description: error.message || 'An error occurred while fetching DSO metrics.',
+      });
+    }
+  }, [isError, error, toast]);
 
   // Handle filter changes
   const handleDateRangeChange = (value: string) => {

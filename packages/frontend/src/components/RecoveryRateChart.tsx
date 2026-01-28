@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -106,18 +106,19 @@ export function RecoveryRateChart({
       branch: branch === 'all' ? undefined : branch,
       date_range: dateRange,
       plan: plan === 'all' ? undefined : plan,
-    },
-    {
-      // Show error toast when query fails
-      onError: (err) => {
-        toast({
-          variant: 'destructive',
-          title: 'Failed to load recovery data',
-          description: err.message || 'An error occurred while fetching recovery metrics.',
-        });
-      },
     }
   );
+
+  // Show error toast when query fails
+  useEffect(() => {
+    if (isError && error) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to load recovery data',
+        description: error.message || 'An error occurred while fetching recovery metrics.',
+      });
+    }
+  }, [isError, error, toast]);
 
   // Handle filter changes
   const handleBranchChange = (value: string) => {

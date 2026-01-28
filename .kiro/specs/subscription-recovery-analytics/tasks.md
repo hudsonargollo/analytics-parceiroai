@@ -294,7 +294,7 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
   - Verify pagination with large datasets
   - Ensure all tests pass, ask the user if questions arise
 
-- [-] 15. Implement Chatwoot sidebar API
+- [x] 15. Implement Chatwoot sidebar API
   - [x] 15.1 Create GET /api/chatwoot/customer/:customer_id/billing endpoint
     - Apply Chatwoot token authentication
     - Query D1 for customer's outstanding invoices
@@ -327,7 +327,7 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - **Validates: Requirements 5.5**
     - Simulate button click, verify n8n webhook called with correct payload
 
-- [ ] 16. Implement error handling and retry logic
+- [x] 16. Implement error handling and retry logic
   - [x] 16.1 Create retry wrapper with exponential backoff
     - Implement processWithRetry function
     - Retry failed operations up to 3 times
@@ -360,7 +360,7 @@ This implementation plan breaks down the Subscription Recovery Analytics system 
     - **Validates: Requirements 8.3**
     - Simulate persistent failures, verify events written to DLQ
 
-- [ ] 17. Implement data privacy and security measures
+- [x] 17. Implement data privacy and security measures
   - [x] 17.1 Add data validation to prevent PII storage
     - Create validation function to check for sensitive fields
     - Reject or strip fields like name, email, phone, address
