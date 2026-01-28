@@ -34,10 +34,14 @@ id = "ad78f34ba1804a2e9dae1ed916112016"
 # Production environment
 [env.production]
 name = "painel-parceiroai-prod"
-vars = { ENVIRONMENT = "production", N8N_WEBHOOK_URL = "https://your-n8n-instance.com/webhook/boleto-resend" }
 routes = [
   { pattern = "api.painel.clubemkt.digital", custom_domain = true }
 ]
+
+[env.production.vars]
+ENVIRONMENT = "production"
+N8N_WEBHOOK_URL = "https://your-n8n-instance.com/webhook/boleto-resend"
+ASAAS_API_URL = "https://api-sandbox.asaas.com/v3"
 
 [[env.production.d1_databases]]
 binding = "DB"

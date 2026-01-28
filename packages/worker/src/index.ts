@@ -46,6 +46,8 @@ export interface Env {
   KV: KVNamespace;
   ENVIRONMENT: string;
   N8N_WEBHOOK_URL: string;
+  ASAAS_API_URL: string;
+  ASAAS_API_TOKEN: string;
   WEBHOOK_SECRET: string;
   ZUCKZAPGO_SECRET: string;
   VALID_API_KEYS: string;

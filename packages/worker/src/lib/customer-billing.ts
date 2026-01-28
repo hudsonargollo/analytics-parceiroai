@@ -119,9 +119,9 @@ export async function getCustomerBillingHistory(
   
   // Build payment history summary
   const payment_history_summary = {
-    total_paid: summaryResult?.total_paid || 0,
-    on_time_payments: summaryResult?.on_time_payments || 0,
-    late_payments: summaryResult?.late_payments || 0,
+    total_paid: Number(summaryResult?.total_paid) || 0,
+    on_time_payments: Number(summaryResult?.on_time_payments) || 0,
+    late_payments: Number(summaryResult?.late_payments) || 0,
   };
   
   // Build response
@@ -133,7 +133,7 @@ export async function getCustomerBillingHistory(
   };
   
   // Include last payment date if available
-  if (summaryResult?.last_payment_date) {
+  if (summaryResult?.last_payment_date && typeof summaryResult.last_payment_date === 'string') {
     response.last_payment_date = summaryResult.last_payment_date;
   }
   
